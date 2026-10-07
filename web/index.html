@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>TailDeck 2000 Professional</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Windows 2000 Desktop Window Container -->
+  <div class="win2k-window">
+    <!-- Title Bar -->
+    <div class="win2k-title-bar">
+      <div class="win2k-title-text">
+        <span class="title-main">TailDeck 2000 Professional</span>
+      </div>
+      <div class="win2k-title-controls">
+        <button class="win2k-title-btn" aria-label="Minimize">_</button>
+        <button class="win2k-title-btn" aria-label="Maximize">□</button>
+        <button class="win2k-title-btn btn-close" aria-label="Close">X</button>
+      </div>
+    </div>
+
+    <!-- Retro Menu Bar with Integrated Controls -->
+    <div class="win2k-menu-bar">
+      <div class="menu-left">
+        <div class="menu-item-wrapper">
+          <span class="menu-item" id="menuItemFile"><span class="underline">F</span>ile</span>
+          <div class="win2k-dropdown" id="dropdownFile">
+            <div class="dropdown-item" id="menuActionReload">새로고침 (F5)</div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-item" id="menuActionClose">닫기</div>
+          </div>
+        </div>
+        <div class="menu-item-wrapper">
+          <span class="menu-item" id="menuItemEdit"><span class="underline">E</span>dit</span>
+          <div class="win2k-dropdown" id="dropdownEdit">
+            <div class="dropdown-item disabled">버튼 편집 (우클릭)</div>
+          </div>
+        </div>
+        <div class="menu-item-wrapper">
+          <span class="menu-item" id="menuItemView"><span class="underline">V</span>iew</span>
+          <div class="win2k-dropdown" id="dropdownView">
+            <div class="dropdown-item" id="menuZoomIn">확대 (+)</div>
+            <div class="dropdown-item" id="menuZoomOut">축소 (-)</div>
+            <div class="dropdown-item" id="menuZoomReset">원래 크기 100% (<span id="zoomLabel">100%</span>)</div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-item" id="menuFullscreen">전체화면 토글</div>
+          </div>
+        </div>
+        <div class="menu-item-wrapper">
+          <span class="menu-item" id="menuItemHelp"><span class="underline">H</span>elp</span>
+          <div class="win2k-dropdown" id="dropdownHelp">
+            <div class="dropdown-item" id="menuActionAbout">TailDeck 정보...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Client Area: 3x4 Button Grid -->
+    <div class="win2k-client-area">
+      <main id="deckGrid" class="deck-grid">
+        <!-- Buttons will be dynamically rendered via app.js -->
+      </main>
+    </div>
+
+    <!-- Sunken Status Bar -->
+    <footer class="win2k-status-bar">
+      <div class="status-panel panel-connection">
+        <div id="statusBeacon" class="status-led disconnected"></div>
+        <span id="connText">오프라인</span>
+      </div>
+      <div class="status-panel panel-msg">
+        <span id="feedbackMsg">준비됨</span>
+      </div>
+      <div class="status-panel panel-info">
+        <span>WIN2K</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

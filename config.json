@@ -1,0 +1,102 @@
+{
+  "grid_rows": 3,
+  "grid_cols": 4,
+  "buttons": [
+    {
+      "id": 0,
+      "title": "Chrome",
+      "color": "#1A73E8",
+      "icon": "ie.png",
+      "action_type": "app",
+      "payload": "chrome"
+    },
+    {
+      "id": 1,
+      "title": "YouTube",
+      "color": "#EA4335",
+      "icon": "media_player.png",
+      "action_type": "url",
+      "payload": "https://www.youtube.com"
+    },
+    {
+      "id": 2,
+      "title": "GitHub",
+      "color": "#24292E",
+      "icon": "cmd.png",
+      "action_type": "url",
+      "payload": "https://github.com"
+    },
+    {
+      "id": 3,
+      "title": "Vol Mute",
+      "color": "#757575",
+      "icon": "vol_mute.png",
+      "action_type": "media",
+      "payload": "volume_mute"
+    },
+    {
+      "id": 4,
+      "title": "Vol Down",
+      "color": "#5F6368",
+      "icon": "vol_down.png",
+      "action_type": "media",
+      "payload": "volume_down"
+    },
+    {
+      "id": 5,
+      "title": "Vol Up",
+      "color": "#34A853",
+      "icon": "vol_up.png",
+      "action_type": "media",
+      "payload": "volume_up"
+    },
+    {
+      "id": 6,
+      "title": "Play/Pause",
+      "color": "#FBBC04",
+      "icon": "play.png",
+      "action_type": "media",
+      "payload": "play_pause"
+    },
+    {
+      "id": 7,
+      "title": "Calculator",
+      "color": "#8E24AA",
+      "icon": "calc.png",
+      "action_type": "app",
+      "payload": "calc"
+    },
+    {
+      "id": 8,
+      "title": "Notepad",
+      "color": "#aa5500",
+      "icon": "notepad.png",
+      "action_type": "app",
+      "payload": "notepad"
+    },
+    {
+      "id": 9,
+      "title": "Typing Macro",
+      "color": "#E91E63",
+      "icon": "typing.png",
+      "action_type": "typing",
+      "payload": "Hello from TailDeck!"
+    },
+    {
+      "id": 10,
+      "title": "Show Desktop",
+      "color": "#3949AB",
+      "icon": "desktop.png",
+      "action_type": "hotkey",
+      "payload": "win+d"
+    },
+    {
+      "id": 11,
+      "title": "Lock PC",
+      "color": "#D32F2F",
+      "icon": "lock.png",
+      "action_type": "system",
+      "payload": "lock"
+    }
+  ]
+}

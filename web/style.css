@@ -1,0 +1,404 @@
+/* Windows 2000 Retro Stream Deck Theme */
+:root {
+  --win-desktop: #008080; /* Classic Win2K Teal */
+  --win-face: #d4d0c8;
+  --win-highlight: #ffffff;
+  --win-light: #dfdfdf;
+  --win-shadow: #808080;
+  --win-dark-shadow: #404040;
+  --win-title-start: #0a246a;
+  --win-title-end: #a6caf0;
+  --win-text: #000000;
+  --font-win: 'Tahoma', 'Segoe UI', -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  background-color: var(--win-desktop);
+  color: var(--win-text);
+  font-family: var(--font-win);
+  font-size: 11px;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px;
+}
+
+/* Win2K Window Frame */
+.win2k-window {
+  width: 100%;
+  max-width: 600px;
+  height: 100%;
+  max-height: 800px;
+  background-color: var(--win-face);
+  display: flex;
+  flex-direction: column;
+  border-top: 2px solid var(--win-highlight);
+  border-left: 2px solid var(--win-highlight);
+  border-right: 2px solid var(--win-dark-shadow);
+  border-bottom: 2px solid var(--win-dark-shadow);
+  box-shadow: 1px 1px 0px var(--win-shadow), 2px 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Classic Title Bar */
+.win2k-title-bar {
+  background: linear-gradient(90deg, var(--win-title-start), var(--win-title-end));
+  height: 24px;
+  min-height: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 4px;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.win2k-title-text {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.win2k-title-icon {
+  font-size: 12px;
+}
+
+.title-main {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.win2k-title-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.win2k-title-btn {
+  width: 16px;
+  height: 14px;
+  background-color: var(--win-face);
+  border-top: 1px solid var(--win-highlight);
+  border-left: 1px solid var(--win-highlight);
+  border-right: 1px solid var(--win-dark-shadow);
+  border-bottom: 1px solid var(--win-dark-shadow);
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.win2k-title-btn:active {
+  border-top: 1px solid var(--win-dark-shadow);
+  border-left: 1px solid var(--win-dark-shadow);
+  border-right: 1px solid var(--win-highlight);
+  border-bottom: 1px solid var(--win-highlight);
+}
+
+/* Menu Bar with Integrated Quick Controls */
+.win2k-menu-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1px 4px;
+  border-bottom: 1px solid var(--win-shadow);
+  background-color: var(--win-face);
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  z-index: 50;
+  height: 24px;
+  min-height: 24px;
+}
+
+.menu-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.menu-item-wrapper {
+  position: relative;
+}
+
+.menu-item {
+  color: var(--win-text);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 5px;
+  border: 1px solid transparent;
+  display: inline-block;
+}
+
+.menu-item:hover,
+.menu-item.active {
+  background-color: #0a246a;
+  color: #ffffff;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+/* Win2K Classic Dropdown Menu */
+.win2k-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--win-face);
+  border-top: 1px solid var(--win-highlight);
+  border-left: 1px solid var(--win-highlight);
+  border-right: 2px solid var(--win-dark-shadow);
+  border-bottom: 2px solid var(--win-dark-shadow);
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+  min-width: 140px;
+  padding: 2px;
+  z-index: 100;
+}
+
+.win2k-dropdown.open {
+  display: block;
+}
+
+.dropdown-item {
+  font-size: 11px;
+  padding: 3px 12px;
+  cursor: pointer;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.dropdown-item:hover {
+  background-color: #0a246a;
+  color: #ffffff;
+}
+
+.dropdown-item.disabled {
+  color: #808080;
+  cursor: default;
+}
+
+.dropdown-item.disabled:hover {
+  background-color: transparent;
+  color: #808080;
+}
+
+.dropdown-separator {
+  height: 1px;
+  background-color: var(--win-shadow);
+  border-bottom: 1px solid var(--win-highlight);
+  margin: 3px 2px;
+}
+
+
+
+/* Client Area */
+.win2k-client-area {
+  flex: 1;
+  padding: 12px;
+  background-color: var(--win-face);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 3x4 Grid */
+.deck-grid {
+  width: 100%;
+  max-width: 480px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(10px * var(--deck-scale, 1));
+  touch-action: manipulation;
+  transform: scale(var(--deck-scale, 1));
+  transform-origin: center center;
+  transition: transform 0.15s ease;
+  margin: auto 0;
+}
+
+/* Win2K 3D Beveled Buttons (정사각형 스트림덱 스타일) */
+.deck-btn {
+  width: 100%;
+  aspect-ratio: 1 / 1.05;
+  background-color: var(--win-face);
+  border-top: 2px solid var(--win-highlight);
+  border-left: 2px solid var(--win-highlight);
+  border-right: 2px solid var(--win-dark-shadow);
+  border-bottom: 2px solid var(--win-dark-shadow);
+  box-shadow: inset 1px 1px 0px var(--win-light), inset -1px -1px 0px var(--win-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 4px 6px 4px;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease, outline 0.15s ease;
+}
+
+.deck-btn:active,
+.deck-btn.btn-pressed {
+  border-top: 2px solid var(--win-dark-shadow);
+  border-left: 2px solid var(--win-dark-shadow);
+  border-right: 2px solid var(--win-highlight);
+  border-bottom: 2px solid var(--win-highlight);
+  box-shadow: inset 1px 1px 0px #000000;
+  padding-top: 6px;
+  padding-left: 5px;
+  background-color: #dfdbd2;
+  outline: 2px solid var(--btn-accent, #000080);
+  outline-offset: -3px;
+}
+
+/* 상단 테마 컬러 스트립 바 */
+.btn-accent-bar {
+  width: 100%;
+  height: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+/* 아이콘 및 라벨 콘텐츠 컨테이너 (하단 뱃지와의 시각적 무게중심을 맞추어 안정감 있게 하향 배치) */
+.btn-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: auto 0;
+  padding-top: 6px;
+  width: 100%;
+  min-height: 0;
+  flex-shrink: 1;
+}
+
+/* Windows 2000 레트로 픽셀 아이콘 */
+.btn-icon-img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  object-fit: contain;
+  margin: 0 0 3px 0;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.btn-title {
+  font-size: 11px;
+  font-weight: bold;
+  color: #000000;
+  text-align: center;
+  max-width: 95%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.btn-badge {
+  font-size: 8px;
+  font-family: monospace;
+  color: #404040;
+  background-color: #e0ded8;
+  padding: 1px 4px;
+  border: 1px dotted var(--win-shadow);
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-bottom: 1px;
+}
+
+.deck-btn.flash-success {
+  background-color: #c8e6c9 !important;
+  outline: 2px solid var(--btn-accent, #34A853) !important;
+  outline-offset: -3px;
+}
+
+.deck-btn.flash-fail {
+  background-color: #ffcdd2 !important;
+  outline: 2px solid #D32F2F !important;
+  outline-offset: -3px;
+}
+
+/* Sunken Status Bar */
+.win2k-status-bar {
+  display: flex;
+  height: 22px;
+  min-height: 22px;
+  background-color: var(--win-face);
+  padding: 2px;
+  gap: 3px;
+}
+
+.status-panel {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--win-shadow);
+  border-left: 1px solid var(--win-shadow);
+  border-right: 1px solid var(--win-highlight);
+  border-bottom: 1px solid var(--win-highlight);
+  padding: 0 6px;
+  font-size: 10px;
+  color: #000000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-connection {
+  width: 90px;
+  gap: 5px;
+}
+
+.panel-msg {
+  flex: 1;
+}
+
+.panel-info {
+  width: 55px;
+  justify-content: center;
+  font-weight: bold;
+  color: #555555;
+}
+
+/* LED Indicator */
+.status-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid #404040;
+}
+
+.status-led.connected {
+  background-color: #00ff00;
+  box-shadow: 0 0 4px #00ff00;
+}
+
+.status-led.disconnected {
+  background-color: #ff0000;
+  box-shadow: 0 0 3px #ff0000;
+}

@@ -41,3 +41,7 @@ htmlcov/
 
 # Logs
 *.log
+
+# Backups and temporary files
+*.bak
+*.tmp.*

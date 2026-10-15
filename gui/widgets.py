@@ -9,10 +9,16 @@ class DeckButtonWidget(QFrame):
     """
     스트림덱 개별 가상 버튼 위젯 (Windows 2000 레트로 스타일).
     좌클릭: PC에서 액션 직접 실행
-    우클릭: 액션 편집 다이얼로그 호출
+    우클릭: 컨텍스트 메뉴 호출 (편집 / 복사 / 붙여넣기 / 초기화)
     """
     clicked = pyqtSignal(int)
     edit_requested = pyqtSignal(int)
+    copy_requested = pyqtSignal(int)
+    paste_requested = pyqtSignal(int)
+    clear_requested = pyqtSignal(int)
+
+    # 버튼 설정 복사/붙여넣기를 위한 공유 클립보드 버퍼
+    clipboard_data = None
 
     def __init__(self, button_id: int, parent=None):
         super().__init__(parent)
@@ -36,7 +42,7 @@ class DeckButtonWidget(QFrame):
         # 중앙 Windows 2000 픽셀 아이콘
         self.lbl_icon = QLabel(self)
         self.lbl_icon.setAlignment(Qt.AlignCenter)
-        self.lbl_icon.setFixedHeight(30)
+        self.lbl_icon.setFixedHeight(44)
         self.lbl_icon.setStyleSheet("background: transparent;")
 
         # 중앙 제목 라벨 (Win2K Tahoma 볼드 폰트)
@@ -69,13 +75,13 @@ class DeckButtonWidget(QFrame):
         self.lbl_badge.setText(act_type.upper() if act_type else "EMPTY")
         self.accent_bar.setStyleSheet(f"background-color: {color}; border: 1px inset #404040;")
 
-        # Windows 2000 레트로 아이콘 로드
+        # Windows 2000 레트로 아이콘 로드 (42x42로 큼직하고 시원하게 렌더링)
         if icon_name:
             icon_path = Path(__file__).resolve().parent.parent / "web" / "icons" / icon_name
             if not icon_path.exists():
                 icon_path = Path(__file__).resolve().parent.parent / "web" / "static" / "icons" / icon_name
             if icon_path.exists():
-                pix = QPixmap(str(icon_path)).scaled(26, 26, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pix = QPixmap(str(icon_path)).scaled(42, 42, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.lbl_icon.setPixmap(pix)
                 self.lbl_icon.show()
             else:
@@ -109,13 +115,26 @@ class DeckButtonWidget(QFrame):
 
     def _show_context_menu(self, pos):
         menu = QMenu(self)
-        act_exec = QAction("지금 바로 실행", self)
-        act_exec.triggered.connect(lambda: self.clicked.emit(self.button_id))
 
         act_edit = QAction("버튼 설정 편집...", self)
         act_edit.triggered.connect(lambda: self.edit_requested.emit(self.button_id))
-
-        menu.addAction(act_exec)
-        menu.addSeparator()
         menu.addAction(act_edit)
+
+        menu.addSeparator()
+
+        act_copy = QAction("버튼 설정 복사", self)
+        act_copy.triggered.connect(lambda: self.copy_requested.emit(self.button_id))
+        menu.addAction(act_copy)
+
+        act_paste = QAction("버튼 설정 붙여넣기", self)
+        act_paste.setEnabled(bool(DeckButtonWidget.clipboard_data))
+        act_paste.triggered.connect(lambda: self.paste_requested.emit(self.button_id))
+        menu.addAction(act_paste)
+
+        menu.addSeparator()
+
+        act_clear = QAction("버튼 초기화 (비우기)", self)
+        act_clear.triggered.connect(lambda: self.clear_requested.emit(self.button_id))
+        menu.addAction(act_clear)
+
         menu.exec_(pos)

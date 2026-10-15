@@ -1,3 +1,4 @@
+import copy
 import io
 import webbrowser
 from typing import List, Dict, Any
@@ -7,7 +8,7 @@ from PyQt5.QtWidgets import (
     QLabel, QPushButton, QComboBox, QTableView, QHeaderView,
     QGroupBox, QLCDNumber, QMessageBox, QApplication, QInputDialog
 )
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, QSignalBlocker
 from PyQt5.QtGui import QPixmap, QImage, QFont
 
 from core.config import ConfigManager
@@ -39,6 +40,7 @@ class MainWindow(QMainWindow):
         if self.server_thread:
             self.server_thread.log_signal.connect(self.on_server_log)
             self.server_thread.client_count_signal.connect(self.on_client_count_changed)
+            self.server_thread.profile_changed_signal.connect(self.on_external_profile_changed)
 
     def init_ui(self):
         self.setWindowTitle("TailDeck 2000 Professional - [Tailscale Remote]")
@@ -146,6 +148,32 @@ class MainWindow(QMainWindow):
         deck_layout = QVBoxLayout(deck_box)
         deck_layout.setContentsMargins(14, 16, 14, 14)
 
+        # 프로필 관리 툴바
+        profile_bar = QHBoxLayout()
+        profile_bar.setSpacing(6)
+        lbl_profile = QLabel("프로필:", self)
+        lbl_profile.setStyleSheet("font-weight: bold; color: #000080;")
+        profile_bar.addWidget(lbl_profile)
+
+        self.combo_profile = QComboBox(self)
+        self.combo_profile.setMinimumWidth(140)
+        profile_bar.addWidget(self.combo_profile, stretch=1)
+
+        btn_add_profile = QPushButton("추가...", self)
+        btn_add_profile.setToolTip("새 프로필 추가 (현재 프로필 복제)")
+        btn_add_profile.clicked.connect(self.on_add_profile)
+        profile_bar.addWidget(btn_add_profile)
+
+        btn_del_profile = QPushButton("삭제", self)
+        btn_del_profile.setToolTip("현재 프로필 삭제")
+        btn_del_profile.clicked.connect(self.on_delete_profile)
+        profile_bar.addWidget(btn_del_profile)
+
+        deck_layout.addLayout(profile_bar)
+
+        self.refresh_profiles_ui()
+        self.combo_profile.currentTextChanged.connect(self.on_profile_combo_changed)
+
         self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(10)
 
@@ -154,6 +182,9 @@ class MainWindow(QMainWindow):
             btn = DeckButtonWidget(i, self)
             btn.clicked.connect(self.on_btn_clicked)
             btn.edit_requested.connect(self.on_btn_edit)
+            btn.copy_requested.connect(self.on_btn_copy)
+            btn.paste_requested.connect(self.on_btn_paste)
+            btn.clear_requested.connect(self.on_btn_clear)
             r = i // 4
             c = i % 4
             self.grid_layout.addWidget(btn, r, c)
@@ -161,7 +192,7 @@ class MainWindow(QMainWindow):
 
         deck_layout.addLayout(self.grid_layout)
 
-        lbl_guide = QLabel("안내: 좌클릭 = PC에서 실행 | 우클릭 = 버튼 설정 편집", self)
+        lbl_guide = QLabel("안내: 좌클릭 = PC에서 실행 | 우클릭 = 설정 메뉴 (편집 / 복사 / 붙여넣기 / 초기화)", self)
         lbl_guide.setStyleSheet("color: #555555; font-size: 11px;")
         deck_layout.addWidget(lbl_guide)
 
@@ -256,14 +287,101 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("접속 URL이 클립보드에 복사되었습니다!", 3000)
 
     def load_buttons_ui(self):
+        """현재 활성 프로필의 버튼 데이터를 그리드 위젯 전체에 반영 (빈 슬롯 클리어 포함)"""
         buttons = self.config_mgr.get_buttons()
-        for btn_data in buttons:
-            bid = btn_data.get("id", 0)
-            if 0 <= bid < len(self.btn_widgets):
-                self.btn_widgets[bid].update_data(btn_data)
+        btn_dict = {b.get("id"): b for b in buttons if "id" in b}
+        for bid, widget in enumerate(self.btn_widgets):
+            btn_data = btn_dict.get(bid, {
+                "id": bid,
+                "title": f"Btn {bid}",
+                "color": "#000080",
+                "icon": "",
+                "action_type": "",
+                "payload": ""
+            })
+            widget.update_data(btn_data)
 
     # 하위 호환용 alias
     load_profile_ui = load_buttons_ui
+
+    def refresh_profiles_ui(self):
+        """프로필 콤보박스 목록 갱신 (시그널 루프 방지 블로킹 적용)"""
+        with QSignalBlocker(self.combo_profile):
+            self.combo_profile.clear()
+            profiles = self.config_mgr.get_profiles()
+            self.combo_profile.addItems(profiles)
+            cur = self.config_mgr.get_current_profile_name()
+            idx = self.combo_profile.findText(cur)
+            if idx != -1:
+                self.combo_profile.setCurrentIndex(idx)
+
+    @pyqtSlot(str)
+    def on_profile_combo_changed(self, profile_name: str):
+        """PC GUI 콤보박스에서 사용자가 프로필을 직접 변경했을 때"""
+        if not profile_name:
+            return
+        cur_name = self.config_mgr.get_current_profile_name()
+        if profile_name == cur_name:
+            return
+        if self.config_mgr.switch_profile(profile_name):
+            self.load_buttons_ui()
+            if self.server_thread:
+                self.server_thread.broadcast_buttons()
+            self.statusBar().showMessage(f"프로필이 '{profile_name}'(으)로 변경되었습니다.", 3000)
+
+    @pyqtSlot(str)
+    def on_external_profile_changed(self, profile_name: str):
+        """외부(DietPi / 모바일) WebSocket에서 프로필 변경 시 PC GUI 동기화 (루프백 방지)"""
+        with QSignalBlocker(self.combo_profile):
+            idx = self.combo_profile.findText(profile_name)
+            if idx == -1:
+                self.refresh_profiles_ui()
+                idx = self.combo_profile.findText(profile_name)
+            if idx != -1:
+                self.combo_profile.setCurrentIndex(idx)
+        self.load_buttons_ui()
+        self.statusBar().showMessage(f"원격 기기 요청으로 프로필이 '{profile_name}'(으)로 변경되었습니다.", 3000)
+
+    def on_add_profile(self):
+        """새 프로필 추가 다이얼로그 (현재 프로필 복제)"""
+        cur_profile = self.config_mgr.get_current_profile_name()
+        name, ok = QInputDialog.getText(
+            self, "새 프로필 추가",
+            f"새 프로필 이름을 입력하세요 (현재 '{cur_profile}' 복제):"
+        )
+        if ok and name.strip():
+            name = name.strip()
+            if name in self.config_mgr.get_profiles():
+                QMessageBox.warning(self, "경고", f"프로필 '{name}'이(가) 이미 존재합니다.")
+                return
+            if self.config_mgr.create_profile(name, copy_from=cur_profile):
+                self.refresh_profiles_ui()
+                self.load_buttons_ui()
+                if self.server_thread:
+                    self.server_thread.broadcast_buttons()
+                self.statusBar().showMessage(f"새 프로필 '{name}'이(가) 생성되었습니다.", 3000)
+
+    def on_delete_profile(self):
+        """현재 프로필 삭제 다이얼로그 (최소 1개 유지 가드)"""
+        profiles = self.config_mgr.get_profiles()
+        if len(profiles) <= 1:
+            QMessageBox.warning(self, "삭제 불가", "최소 1개의 프로필은 유지되어야 합니다.")
+            return
+        cur_profile = self.config_mgr.get_current_profile_name()
+        reply = QMessageBox.question(
+            self, "프로필 삭제",
+            f"현재 프로필 '{cur_profile}'을(를) 정말 삭제하시겠습니까?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            if self.config_mgr.delete_profile(cur_profile):
+                self.refresh_profiles_ui()
+                self.load_buttons_ui()
+                if self.server_thread:
+                    self.server_thread.broadcast_buttons()
+                new_current = self.config_mgr.get_current_profile_name()
+                self.statusBar().showMessage(f"프로필 '{cur_profile}'이(가) 삭제되었습니다. (현재: {new_current})", 3000)
 
     @pyqtSlot(int)
     def on_btn_clicked(self, button_id: int):
@@ -271,19 +389,71 @@ class MainWindow(QMainWindow):
         if self.server_thread:
             self.server_thread.trigger_button_from_pc(button_id)
 
+    def _apply_button_update(self, button_id: int, data: Dict[str, Any], status_msg: str):
+        self.config_mgr.update_button(button_id, data)
+        if 0 <= button_id < len(self.btn_widgets):
+            self.btn_widgets[button_id].update_data(data)
+        if self.server_thread:
+            self.server_thread.broadcast_buttons()
+        self.statusBar().showMessage(status_msg, 3000)
+
     @pyqtSlot(int)
     def on_btn_edit(self, button_id: int):
         btn_data = self.config_mgr.get_button(button_id) or {"id": button_id}
         dlg = ActionEditDialog(btn_data, self)
         if dlg.exec_() == ActionEditDialog.Accepted:
             updated = dlg.get_data()
-            self.config_mgr.update_button(button_id, updated)
-            if 0 <= button_id < len(self.btn_widgets):
-                self.btn_widgets[button_id].update_data(updated)
-            # 모바일 클라이언트에 실시간 브로드캐스트
-            if self.server_thread:
-                self.server_thread.broadcast_buttons()
-            self.statusBar().showMessage(f"버튼 #{button_id} 설정이 저장 및 모바일에 동기화되었습니다.", 3000)
+            self._apply_button_update(
+                button_id, updated,
+                f"버튼 #{button_id} 설정이 저장 및 모바일에 동기화되었습니다."
+            )
+
+    @pyqtSlot(int)
+    def on_btn_copy(self, button_id: int):
+        btn_data = self.config_mgr.get_button(button_id)
+        if not btn_data or not btn_data.get("action_type"):
+            self.statusBar().showMessage(f"버튼 #{button_id}은(는) 설정되지 않은 빈 버튼이므로 복사할 수 없습니다.", 3000)
+            return
+        DeckButtonWidget.clipboard_data = copy.deepcopy(btn_data)
+        title = btn_data.get("title", f"Btn {button_id}")
+        self.statusBar().showMessage(f"버튼 #{button_id} ('{title}') 설정이 클립보드에 복사되었습니다.", 3000)
+
+    @pyqtSlot(int)
+    def on_btn_paste(self, button_id: int):
+        if not DeckButtonWidget.clipboard_data:
+            return
+        new_data = copy.deepcopy(DeckButtonWidget.clipboard_data)
+        new_data["id"] = button_id
+        title = new_data.get("title", f"Btn {button_id}")
+        self._apply_button_update(
+            button_id, new_data,
+            f"버튼 #{button_id}에 복사된 설정('{title}')을 붙여넣었습니다."
+        )
+
+    @pyqtSlot(int)
+    def on_btn_clear(self, button_id: int):
+        btn_data = self.config_mgr.get_button(button_id) or {}
+        title = btn_data.get("title", f"Btn {button_id}")
+        reply = QMessageBox.question(
+            self,
+            "버튼 초기화",
+            f"버튼 #{button_id} ('{title}') 설정을 비우시겠습니까?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            empty_data = {
+                "id": button_id,
+                "title": f"Btn {button_id}",
+                "color": "#000080",
+                "icon": "",
+                "action_type": "",
+                "payload": ""
+            }
+            self._apply_button_update(
+                button_id, empty_data,
+                f"버튼 #{button_id} 설정이 초기화되었습니다."
+            )
 
     @pyqtSlot(str, int, str, str, str)
     def on_server_log(self, time_str, button_id, title, act_type, status):

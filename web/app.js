@@ -28,6 +28,9 @@
 
     ws.onopen = function () {
       updateStatus(true, "Tailscale 연결 완료! 준비됨");
+      try {
+        ws.send(JSON.stringify({ type: "get_profiles" }));
+      } catch (e) {}
     };
 
     ws.onclose = function () {
@@ -67,13 +70,51 @@
     feedbackMsgEl.innerText = text;
   }
 
+  const dropdownProfileEl = document.getElementById("dropdownProfile");
+  let currentProfileName = "Default";
+
+  function updateProfileMenu(currentProfile, profilesList) {
+    if (currentProfile) currentProfileName = currentProfile;
+    if (!dropdownProfileEl) return;
+    dropdownProfileEl.innerHTML = "";
+
+    const list = (profilesList && profilesList.length > 0) ? profilesList : [currentProfileName];
+    list.forEach(pName => {
+      const itemEl = document.createElement("div");
+      const isCurrent = (pName === currentProfileName);
+      itemEl.className = "dropdown-item" + (isCurrent ? " active" : "");
+      itemEl.innerText = (isCurrent ? "✓ " : "  ") + pName;
+      itemEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!isCurrent) {
+          switchProfile(pName);
+        }
+        closeAllDropdowns();
+      });
+      dropdownProfileEl.appendChild(itemEl);
+    });
+  }
+
+  function switchProfile(profileName) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    feedbackMsgEl.innerText = `프로필 전환 요청: ${profileName}...`;
+    ws.send(JSON.stringify({ type: "switch_profile", name: profileName }));
+  }
+
   function handleServerMessage(msg) {
     if (msg.type === "sync_buttons" || msg.type === "sync_profile") {
       buttonsData = msg.buttons || [];
       renderGrid(buttonsData, msg.grid_rows || 3, msg.grid_cols || 4);
+      if (msg.profile) {
+        updateProfileMenu(msg.profile, msg.profiles || []);
+      }
+    } else if (msg.type === "profile_list") {
+      updateProfileMenu(msg.current, msg.profiles || []);
     } else if (msg.type === "action_result") {
       flashButton(msg.button_id, msg.status === "success");
       feedbackMsgEl.innerText = msg.message || (msg.status === "success" ? "성공" : "실패");
+    } else if (msg.type === "error") {
+      feedbackMsgEl.innerText = msg.message || "오류 발생";
     }
   }
 
@@ -99,7 +140,7 @@
       btnEl.style.setProperty("--btn-accent", accentColor);
 
       const iconImgHtml = btnData.icon
-        ? `<img class="btn-icon-img" src="/static/icons/${escapeHtml(btnData.icon)}" onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='/icons/${escapeHtml(btnData.icon)}';}" alt="" width="32" height="32">`
+        ? `<img class="btn-icon-img" src="/static/icons/${escapeHtml(btnData.icon)}" onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='/icons/${escapeHtml(btnData.icon)}';}" alt="" width="38" height="38">`
         : "";
 
       btnEl.innerHTML = `

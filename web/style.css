@@ -189,6 +189,10 @@ body {
   color: #ffffff;
 }
 
+.dropdown-item.active {
+  font-weight: bold;
+}
+
 .dropdown-item.disabled {
   color: #808080;
   cursor: default;
@@ -296,12 +300,10 @@ body {
   flex-shrink: 1;
 }
 
-/* Windows 2000 레트로 픽셀 아이콘 */
+/* Windows 2000 레트로 및 커스텀 아이콘 (시원한 크기 38x38) */
 .btn-icon-img {
-  width: 32px;
-  height: 32px;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
   margin: 0 0 3px 0;
   pointer-events: none;

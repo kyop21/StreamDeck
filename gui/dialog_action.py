@@ -1,3 +1,5 @@
+import re
+from pathlib import Path
 from typing import Dict, Any
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
@@ -140,7 +142,8 @@ class ActionEditDialog(QDialog):
         color_layout.addWidget(self.btn_color_preview)
         form.addRow("테마 색상:", color_layout)
 
-        # 3. 아이콘 선택 (Win2K 레트로)
+        # 3. 아이콘 선택 (Win2K 레트로 + 커스텀 파일 찾아보기)
+        icon_layout = QHBoxLayout()
         self.combo_icon = QComboBox(self)
         for ico_file, ico_label in AVAILABLE_ICONS:
             self.combo_icon.addItem(ico_label, ico_file)
@@ -148,7 +151,16 @@ class ActionEditDialog(QDialog):
         idx_ico = self.combo_icon.findData(cur_icon)
         if idx_ico >= 0:
             self.combo_icon.setCurrentIndex(idx_ico)
-        form.addRow("아이콘:", self.combo_icon)
+        elif cur_icon:
+            self.combo_icon.addItem(f"[사용자 정의] {cur_icon}", cur_icon)
+            self.combo_icon.setCurrentIndex(self.combo_icon.count() - 1)
+
+        self.btn_browse_icon = QPushButton("찾아보기...", self)
+        self.btn_browse_icon.clicked.connect(self._browse_custom_icon)
+
+        icon_layout.addWidget(self.combo_icon, stretch=1)
+        icon_layout.addWidget(self.btn_browse_icon)
+        form.addRow("아이콘:", icon_layout)
 
         # 4. 액션 종류
         self.combo_action = QComboBox(self)
@@ -248,6 +260,81 @@ class ActionEditDialog(QDialog):
             self.combo_payload.hide()
             self.btn_browse.hide()
             self.lbl_hint.setText("원터치로 자동 타이핑할 텍스트 문장을 입력하세요.")
+
+    def _browse_custom_icon(self):
+        """내 컴퓨터에서 임의의 이미지 파일을 선택하여 32x32 아이콘으로 자동 최적화 등록"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "커스텀 아이콘 선택",
+            "",
+            "이미지 파일 (*.png *.jpg *.jpeg *.ico *.bmp *.webp);;모든 파일 (*.*)"
+        )
+        if not file_path:
+            return
+
+        src_path = Path(file_path)
+        safe_stem = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', src_path.stem)
+        dest_filename = f"custom_{safe_stem}.png"
+
+        base_dir = Path(__file__).resolve().parent.parent / "web"
+        dest_dirs = [base_dir / "icons", base_dir / "static" / "icons"]
+        for d in dest_dirs:
+            d.mkdir(parents=True, exist_ok=True)
+
+        try:
+            from PIL import Image
+            im = Image.open(src_path)
+
+            # ICO 파일 중 적절한 원본 프레임 추출
+            if getattr(im, 'ico', None) and hasattr(im.ico, 'sizes'):
+                sizes = im.ico.sizes()
+                best_size = (48, 48) if (48, 48) in sizes else ((32, 32) if (32, 32) in sizes else list(sizes)[0])
+                im = im.ico.getimage(best_size)
+
+            im = im.convert("RGBA")
+
+            # 1. 투명 여백 자동 크롭 (Auto Crop - 알맹이 피사체만 정밀 추출)
+            bbox = im.getbbox()
+            if bbox:
+                w_crop = bbox[2] - bbox[0]
+                h_crop = bbox[3] - bbox[1]
+                if w_crop > 4 and h_crop > 4:
+                    im = im.crop(bbox)
+
+            # 2. 64x64 캔버스에 최대 크기(94% 이상)로 꽉 차게 비율 유지 리사이즈 & 중앙 배치
+            target_size = 64
+            padding = 2
+            max_dim = target_size - (padding * 2)  # 60px
+            w, h = im.size
+            scale = max_dim / max(w, h)
+            new_w = max(1, int(w * scale))
+            new_h = max(1, int(h * scale))
+
+            im_resized = im.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+            canvas = Image.new("RGBA", (target_size, target_size), (0, 0, 0, 0))
+            paste_x = (target_size - new_w) // 2
+            paste_y = (target_size - new_h) // 2
+            canvas.paste(im_resized, (paste_x, paste_y), im_resized)
+
+            for d in dest_dirs:
+                canvas.save(str(d / dest_filename), format="PNG")
+
+            existing_idx = self.combo_icon.findData(dest_filename)
+            if existing_idx >= 0:
+                self.combo_icon.setCurrentIndex(existing_idx)
+            else:
+                label_text = f"[사용자 정의] {src_path.name}"
+                self.combo_icon.addItem(label_text, dest_filename)
+                self.combo_icon.setCurrentIndex(self.combo_icon.count() - 1)
+
+            QMessageBox.information(
+                self,
+                "아이콘 등록 성공",
+                f"커스텀 아이콘 '{src_path.name}'이(가)\n여백 자동 제거 및 꽉 찬 고해상도(64×64) 규격으로 등록되었습니다."
+            )
+        except Exception as e:
+            QMessageBox.warning(self, "아이콘 등록 오류", f"이미지 처리 중 오류가 발생했습니다:\n{str(e)}")
 
     def _browse_file(self):
         act = self.combo_action.currentData()

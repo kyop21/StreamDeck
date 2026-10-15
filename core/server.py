@@ -21,6 +21,7 @@ class StreamDeckServerThread(QThread):
     log_signal = pyqtSignal(str, int, str, str, str)  # (time, button_id, title, action_type, status)
     client_count_signal = pyqtSignal(int)             # 현재 접속된 모바일 클라이언트 수
     button_executed_signal = pyqtSignal(int, bool)    # (button_id, success)
+    profile_changed_signal = pyqtSignal(str)          # (profile_name) 외부에서 프로필 변경 시 GUI 동기화
 
     def __init__(self, config_mgr: ConfigManager, host: str = "0.0.0.0", port: int = 8080, parent=None):
         super().__init__(parent)
@@ -28,6 +29,7 @@ class StreamDeckServerThread(QThread):
         self.host = host
         self.port = port
         self.web_dir = Path(__file__).resolve().parent.parent / "web"
+        self._sync_seq = 0
 
         self.app: Optional[web.Application] = None
         self.runner: Optional[web.AppRunner] = None
@@ -112,13 +114,20 @@ class StreamDeckServerThread(QThread):
 
         return ws
 
-    async def _send_sync_buttons(self, ws: web.WebSocketResponse):
-        payload = {
+    def _make_sync_payload(self) -> Dict[str, Any]:
+        self._sync_seq += 1
+        return {
             "type": "sync_buttons",
+            "seq": self._sync_seq,
+            "profile": self.config_mgr.get_current_profile_name(),
+            "profiles": self.config_mgr.get_profiles(),
             "grid_rows": self.config_mgr.data.get("grid_rows", 3),
             "grid_cols": self.config_mgr.data.get("grid_cols", 4),
             "buttons": self.config_mgr.get_buttons()
         }
+
+    async def _send_sync_buttons(self, ws: web.WebSocketResponse):
+        payload = self._make_sync_payload()
         await ws.send_str(json.dumps(payload))
 
     # 하위 호환성
@@ -131,6 +140,41 @@ class StreamDeckServerThread(QThread):
             button_id = data.get("button_id")
             if button_id is not None:
                 await self._execute_and_notify(button_id, source="mobile")
+        elif msg_type in ("request_sync", "get_buttons", "sync_buttons"):
+            await self._send_sync_buttons(ws)
+        elif msg_type == "get_profiles":
+            await ws.send_str(json.dumps({
+                "type": "profile_list",
+                "profiles": self.config_mgr.get_profiles(),
+                "current": self.config_mgr.get_current_profile_name()
+            }))
+        elif msg_type == "switch_profile":
+            target_name = data.get("name")
+            profiles = self.config_mgr.get_profiles()
+            if not target_name or target_name not in profiles:
+                # NACK: 미존재 프로필 거절
+                await ws.send_str(json.dumps({
+                    "type": "error",
+                    "code": "PROFILE_NOT_FOUND",
+                    "message": f"Profile '{target_name}' not found",
+                    "current_profile": self.config_mgr.get_current_profile_name()
+                }))
+            else:
+                if self.config_mgr.get_current_profile_name() != target_name:
+                    self.config_mgr.switch_profile(target_name)
+                    self.profile_changed_signal.emit(target_name)
+                self.broadcast_buttons()
+        elif msg_type == "trigger_direct":
+            act_type = data.get("action_type", "")
+            payload = data.get("payload", "")
+            if act_type:
+                success, msg = ActionExecutor.execute(act_type, payload)
+                await ws.send_str(json.dumps({
+                    "type": "action_result",
+                    "button_id": -1,
+                    "status": "success" if success else "failed",
+                    "message": msg
+                }))
 
     async def _execute_and_notify(self, button_id: int, source: str = "mobile"):
         btn = self.config_mgr.get_button(button_id)
@@ -138,6 +182,9 @@ class StreamDeckServerThread(QThread):
             return
 
         act_type = btn.get("action_type", "")
+        if not act_type:
+            return
+
         payload = btn.get("payload", "")
         title = btn.get("title", f"Btn {button_id}")
 
@@ -175,12 +222,7 @@ class StreamDeckServerThread(QThread):
         if not self.loop or not self.loop.is_running():
             return
 
-        payload = json.dumps({
-            "type": "sync_buttons",
-            "grid_rows": self.config_mgr.data.get("grid_rows", 3),
-            "grid_cols": self.config_mgr.data.get("grid_cols", 4),
-            "buttons": self.config_mgr.get_buttons()
-        })
+        payload = json.dumps(self._make_sync_payload())
 
         async def _broadcast():
             for ws in list(self._active_sockets):

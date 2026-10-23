@@ -1,0 +1,21 @@
+[Unit]
+Description=TailDeck 2000 Professional Native Framebuffer Client (Raspberry Pi 1)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+# Deployed path on DietPi is /root/taildeck_fb.py
+ExecStart=/usr/bin/python3 /root/taildeck_fb.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

@@ -4,7 +4,8 @@ import time
 import ctypes
 import webbrowser
 import subprocess
-from typing import Tuple, Dict, Any
+import threading
+from typing import Tuple, Dict, Any, Optional
 
 user32 = ctypes.windll.user32
 
@@ -59,6 +60,8 @@ kernel32.GlobalLock.restype = ctypes.c_void_p
 kernel32.GlobalLock.argtypes = [ctypes.c_void_p]
 kernel32.GlobalUnlock.argtypes = [ctypes.c_void_p]
 kernel32.GlobalFree.argtypes = [ctypes.c_void_p]
+kernel32.GlobalSize.restype = ctypes.c_size_t
+kernel32.GlobalSize.argtypes = [ctypes.c_void_p]
 
 user32.OpenClipboard.restype = ctypes.c_bool
 user32.OpenClipboard.argtypes = [ctypes.c_void_p]
@@ -66,6 +69,10 @@ user32.CloseClipboard.restype = ctypes.c_bool
 user32.EmptyClipboard.restype = ctypes.c_bool
 user32.SetClipboardData.restype = ctypes.c_void_p
 user32.SetClipboardData.argtypes = [ctypes.c_uint, ctypes.c_void_p]
+user32.GetClipboardData.restype = ctypes.c_void_p
+user32.GetClipboardData.argtypes = [ctypes.c_uint]
+user32.IsClipboardFormatAvailable.restype = ctypes.c_bool
+user32.IsClipboardFormatAvailable.argtypes = [ctypes.c_uint]
 
 
 def _set_clipboard_text(text: str) -> bool:
@@ -113,8 +120,112 @@ def _set_clipboard_text(text: str) -> bool:
         user32.CloseClipboard()
 
 
+def _get_clipboard_text() -> Optional[str]:
+    """Windows API를 사용하여 현재 클립보드의 유니코드 텍스트를 읽어옴"""
+    CF_UNICODETEXT = 13
+
+    opened = False
+    for _ in range(5):
+        if user32.OpenClipboard(None):
+            opened = True
+            break
+        time.sleep(0.02)
+
+    if not opened:
+        return None
+
+    try:
+        if not user32.IsClipboardFormatAvailable(CF_UNICODETEXT):
+            return None
+        h_mem = user32.GetClipboardData(CF_UNICODETEXT)
+        if not h_mem:
+            return None
+        size_bytes = kernel32.GlobalSize(h_mem)
+        if size_bytes == 0:
+            return None
+        if size_bytes < 2:
+            return ""
+
+        p_mem = kernel32.GlobalLock(h_mem)
+        if not p_mem:
+            return None
+        try:
+            max_chars = size_bytes // 2
+            raw_str = ctypes.wstring_at(p_mem, max_chars)
+            null_idx = raw_str.find('\0')
+            if null_idx != -1:
+                return raw_str[:null_idx]
+            return raw_str
+        finally:
+            kernel32.GlobalUnlock(h_mem)
+    finally:
+        user32.CloseClipboard()
+
+
+class ClipboardRestorer:
+    """타이핑 매크로 실행 시 클립보드 원본 텍스트를 안전하게 보존하고 복원하는 관리자"""
+    _lock = threading.Lock()
+    _pending_orig_text: Optional[str] = None
+    _has_pending: bool = False
+    _timer: Optional[threading.Timer] = None
+
+    @classmethod
+    def begin_typing(cls) -> Optional[str]:
+        """타이핑 세션 시작: 현재 클립보드 원본을 캡처하거나 진행 중인 세션의 최초 원본 유지"""
+        with cls._lock:
+            if cls._timer is not None:
+                cls._timer.cancel()
+                cls._timer = None
+
+            if not cls._has_pending:
+                cls._pending_orig_text = _get_clipboard_text()
+                cls._has_pending = True
+            return cls._pending_orig_text
+
+    @classmethod
+    def rollback(cls) -> None:
+        """클립보드 쓰기 실패 등 비정상 중단 시 세션 취소"""
+        with cls._lock:
+            if cls._timer is not None:
+                cls._timer.cancel()
+                cls._timer = None
+            cls._has_pending = False
+            cls._pending_orig_text = None
+
+    @classmethod
+    def schedule_restore(cls, delay: float = 0.35) -> None:
+        """타이핑 완료 후 지정된 딜레이(초) 후 원본 텍스트 복원 스케줄링 (단일 디바운스)"""
+        with cls._lock:
+            if cls._timer is not None:
+                cls._timer.cancel()
+
+            def _restore_callback():
+                with cls._lock:
+                    orig = cls._pending_orig_text
+
+                if orig is not None:
+                    _set_clipboard_text(orig)
+
+                with cls._lock:
+                    if cls._timer is current_timer:
+                        cls._has_pending = False
+                        cls._pending_orig_text = None
+                        cls._timer = None
+
+            current_timer = threading.Timer(delay, _restore_callback)
+            current_timer.daemon = True
+            cls._timer = current_timer
+            current_timer.start()
+
+    @classmethod
+    def reset(cls) -> None:
+        """테스트 및 상태 강제 초기화용"""
+        cls.rollback()
+
+
 class ActionExecutor:
     """7대 액션 타입 실행 엔진"""
+    _typing_lock = threading.Lock()
 
     @classmethod
     def execute(cls, action_type: str, payload: str) -> Tuple[bool, str]:
@@ -213,11 +324,28 @@ class ActionExecutor:
     def _act_typing(cls, payload: str) -> Tuple[bool, str]:
         if not payload:
             return False, "입력할 텍스트가 없습니다."
-        # 클립보드에 복사 후 Ctrl+V 시뮬레이션
-        if _set_clipboard_text(payload):
-            time.sleep(0.05)
-            _press_key(VK_MAP["ctrl"])
-            _tap_key(ord('V'))
-            _release_key(VK_MAP["ctrl"])
-            return True, f"텍스트 타이핑 완료: {payload[:20]}..."
-        return False, "클립보드 접근 실패"
+        with cls._typing_lock:
+            # 1. 원본 클립보드 보존 세션 시작 (연속 호출 시 최초 원본 보존)
+            ClipboardRestorer.begin_typing()
+
+            # 2. 클립보드에 매크로 텍스트 복사
+            if not _set_clipboard_text(payload):
+                ClipboardRestorer.rollback()
+                return False, "클립보드 접근 실패"
+
+            try:
+                time.sleep(0.05)
+                _press_key(VK_MAP["ctrl"])
+                try:
+                    _tap_key(ord('V'))
+                finally:
+                    _release_key(VK_MAP["ctrl"])
+
+                # 3. 대상 앱이 Ctrl+V를 처리할 수 있도록 0.35초 후 원본 비동기 복원
+                ClipboardRestorer.schedule_restore(delay=0.35)
+
+                preview = payload[:20] + "..." if len(payload) > 20 else payload
+                return True, f"텍스트 타이핑 완료: {preview}"
+            except Exception as e:
+                ClipboardRestorer.rollback()
+                return False, f"타이핑 실행 중 오류 발생: {e}"

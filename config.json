@@ -4,103 +4,103 @@
   "buttons": [
     {
       "id": 0,
-      "title": "Chrome",
-      "color": "#1A73E8",
-      "icon": "ie.png",
-      "action_type": "app",
-      "payload": "chrome"
+      "title": "서브에이전트",
+      "color": "#0A246A",
+      "icon": "task_mgr.png",
+      "action_type": "typing",
+      "payload": "/agy-subagent"
     },
     {
       "id": 1,
-      "title": "YouTube",
-      "color": "#EA4335",
-      "icon": "media_player.png",
-      "action_type": "url",
-      "payload": "https://www.youtube.com"
+      "title": "Compact",
+      "color": "#008080",
+      "icon": "help.png",
+      "action_type": "typing",
+      "payload": "/compact"
     },
     {
       "id": 2,
-      "title": "Ping Test",
-      "color": "#008080",
-      "icon": "network.png",
-      "action_type": "script",
-      "payload": "start cmd /k \"ping 8.8.8.8 -n 4\""
+      "title": "세션인수인계",
+      "color": "#B8860B",
+      "icon": "floppy.png",
+      "action_type": "typing",
+      "payload": "/session-handoff"
     },
     {
       "id": 3,
-      "title": "Vol Mute",
-      "color": "#757575",
-      "icon": "vol_mute.png",
-      "action_type": "media",
-      "payload": "volume_mute"
+      "title": "코랩해설",
+      "color": "#6A1B9A",
+      "icon": "camera.png",
+      "action_type": "typing",
+      "payload": "아래 규칙에 맞춰서 이 노트북의 코드 셀들을 위에서부터 순서대로 설명해줘:\n\n1. [셀 배치 순서]를 가장 먼저 표시해줘. (예: 1번째 실행 셀, 2번째 실행 셀...)\n2. 시스템 코드 ID는 괄호 ( ) 안에 넣어서 표시해줘. (예: (S-amXf6C7qsd) )\n3. 그 다음 이 셀이 어떤 역할을 하는지 핵심 내용을 한두 줄로 설명해줘.\n\n[예시 포맷]\n- 1번째 실행 셀 (S-amXf6C7qsd) : 이 셀은 모델 최적화를 위한 도구를 설치합니다."
     },
     {
       "id": 4,
-      "title": "Vol Down",
-      "color": "#5F6368",
-      "icon": "vol_down.png",
-      "action_type": "media",
-      "payload": "volume_down"
+      "title": "에이전트스킬",
+      "color": "#1A237E",
+      "icon": "desktop.png",
+      "action_type": "typing",
+      "payload": "/using-agent-skills"
     },
     {
       "id": 5,
-      "title": "Vol Up",
-      "color": "#34A853",
-      "icon": "vol_up.png",
-      "action_type": "media",
-      "payload": "volume_up"
+      "title": "Resume",
+      "color": "#5D4037",
+      "icon": "search.png",
+      "action_type": "typing",
+      "payload": "/resume"
     },
     {
       "id": 6,
-      "title": "Play/Pause",
-      "color": "#FBBC04",
-      "icon": "play.png",
-      "action_type": "media",
-      "payload": "play_pause"
+      "title": "Clear",
+      "color": "#AD1457",
+      "icon": "trash.png",
+      "action_type": "typing",
+      "payload": "/new"
     },
     {
       "id": 7,
-      "title": "Calculator",
-      "color": "#8E24AA",
-      "icon": "calc.png",
-      "action_type": "app",
-      "payload": "calc"
+      "title": "CDP협업",
+      "color": "#0277BD",
+      "icon": "network.png",
+      "action_type": "typing",
+      "payload": "/playwright-cdp-collab"
     },
     {
       "id": 8,
-      "title": "Notepad",
-      "color": "#aa5500",
-      "icon": "notepad.png",
-      "action_type": "app",
-      "payload": "notepad"
+      "title": "허더협업",
+      "color": "#00695C",
+      "icon": "cmd.png",
+      "action_type": "typing",
+      "payload": "/herdr-agent-collab"
     },
     {
       "id": 9,
-      "title": "Typing Macro",
-      "color": "#E91E63",
-      "icon": "typing.png",
+      "title": "웹RPC역공학",
+      "color": "#455A64",
+      "icon": "search.png",
       "action_type": "typing",
-      "payload": "Hello from TailDeck!"
+      "payload": "/web-rpc-reverse"
     },
     {
       "id": 10,
-      "title": "Show Desktop",
-      "color": "#3949AB",
-      "icon": "desktop.png",
-      "action_type": "hotkey",
-      "payload": "win+d"
+      "title": "옵시디언",
+      "color": "#E65100",
+      "icon": "notepad.png",
+      "action_type": "typing",
+      "payload": "/obsidian-markdown"
     },
     {
       "id": 11,
-      "title": "Lock PC",
-      "color": "#D32F2F",
-      "icon": "lock.png",
-      "action_type": "system",
-      "payload": "lock"
+      "title": "TDD개발",
+      "color": "#2E7D32",
+      "icon": "run.png",
+      "action_type": "typing",
+      "payload": "/test-driven-development"
     }
   ],
   "schema_version": 2,
-  "current_profile": "Default",
+  "current_profile": "command",
   "profiles": {
     "Default": {
       "grid_rows": 3,
@@ -201,6 +201,108 @@
           "icon": "lock.png",
           "action_type": "system",
           "payload": "lock"
+        }
+      ]
+    },
+    "command": {
+      "grid_rows": 3,
+      "grid_cols": 4,
+      "buttons": [
+        {
+          "id": 0,
+          "title": "서브에이전트",
+          "color": "#0A246A",
+          "icon": "task_mgr.png",
+          "action_type": "typing",
+          "payload": "/agy-subagent"
+        },
+        {
+          "id": 1,
+          "title": "Compact",
+          "color": "#008080",
+          "icon": "help.png",
+          "action_type": "typing",
+          "payload": "/compact"
+        },
+        {
+          "id": 2,
+          "title": "세션인수인계",
+          "color": "#B8860B",
+          "icon": "floppy.png",
+          "action_type": "typing",
+          "payload": "/session-handoff"
+        },
+        {
+          "id": 3,
+          "title": "코랩해설",
+          "color": "#6A1B9A",
+          "icon": "camera.png",
+          "action_type": "typing",
+          "payload": "아래 규칙에 맞춰서 이 노트북의 코드 셀들을 위에서부터 순서대로 설명해줘:\n\n1. [셀 배치 순서]를 가장 먼저 표시해줘. (예: 1번째 실행 셀, 2번째 실행 셀...)\n2. 시스템 코드 ID는 괄호 ( ) 안에 넣어서 표시해줘. (예: (S-amXf6C7qsd) )\n3. 그 다음 이 셀이 어떤 역할을 하는지 핵심 내용을 한두 줄로 설명해줘.\n\n[예시 포맷]\n- 1번째 실행 셀 (S-amXf6C7qsd) : 이 셀은 모델 최적화를 위한 도구를 설치합니다."
+        },
+        {
+          "id": 4,
+          "title": "에이전트스킬",
+          "color": "#1A237E",
+          "icon": "desktop.png",
+          "action_type": "typing",
+          "payload": "/using-agent-skills"
+        },
+        {
+          "id": 5,
+          "title": "Resume",
+          "color": "#5D4037",
+          "icon": "search.png",
+          "action_type": "typing",
+          "payload": "/resume"
+        },
+        {
+          "id": 6,
+          "title": "Clear",
+          "color": "#AD1457",
+          "icon": "trash.png",
+          "action_type": "typing",
+          "payload": "/new"
+        },
+        {
+          "id": 7,
+          "title": "CDP협업",
+          "color": "#0277BD",
+          "icon": "network.png",
+          "action_type": "typing",
+          "payload": "/playwright-cdp-collab"
+        },
+        {
+          "id": 8,
+          "title": "허더협업",
+          "color": "#00695C",
+          "icon": "cmd.png",
+          "action_type": "typing",
+          "payload": "/herdr-agent-collab"
+        },
+        {
+          "id": 9,
+          "title": "웹RPC역공학",
+          "color": "#455A64",
+          "icon": "search.png",
+          "action_type": "typing",
+          "payload": "/web-rpc-reverse"
+        },
+        {
+          "id": 10,
+          "title": "옵시디언",
+          "color": "#E65100",
+          "icon": "notepad.png",
+          "action_type": "typing",
+          "payload": "/obsidian-markdown"
+        },
+        {
+          "id": 11,
+          "title": "TDD개발",
+          "color": "#2E7D32",
+          "icon": "run.png",
+          "action_type": "typing",
+          "payload": "/test-driven-development"
         }
       ]
     }

@@ -13,9 +13,12 @@ from core.config import ConfigManager
 from core.server import StreamDeckServerThread
 
 
-async def test_client():
-    url_http = "http://127.0.0.1:8080/"
-    url_ws = "http://127.0.0.1:8080/ws"
+TEST_PORT = 8089
+
+
+async def _async_client_test(port: int = TEST_PORT):
+    url_http = f"http://127.0.0.1:{port}/"
+    url_ws = f"http://127.0.0.1:{port}/ws"
 
     async with aiohttp.ClientSession() as session:
         # 1. Test HTTP GET /
@@ -45,21 +48,28 @@ async def test_client():
 
 
 def main():
-    app = QCoreApplication(sys.argv)
+    app = QCoreApplication.instance()
+    if app is None:
+        app = QCoreApplication(sys.argv)
     cfg = ConfigManager(filepath=STREAM_DECK_DIR / "test_config.json")
-    server = StreamDeckServerThread(config_mgr=cfg, host="127.0.0.1", port=8080)
+    server = StreamDeckServerThread(config_mgr=cfg, host="127.0.0.1", port=TEST_PORT)
     server.start()
 
     import time
     time.sleep(1.0)  # wait for server to bind
 
     try:
-        asyncio.run(test_client())
+        asyncio.run(_async_client_test(port=TEST_PORT))
         print("\n>>> ALL INTEGRATION TESTS PASSED! <<<")
     finally:
         server.stop()
         if (STREAM_DECK_DIR / "test_config.json").exists():
             (STREAM_DECK_DIR / "test_config.json").unlink()
+
+
+def test_server_integration():
+    """Integration test runnable by pytest / test runners"""
+    main()
 
 
 if __name__ == "__main__":

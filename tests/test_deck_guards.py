@@ -4,7 +4,7 @@ import os
 import asyncio
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 # Headless 모드 설정 (CI/CLI 환경 지원)
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
@@ -174,6 +174,33 @@ class TestDeckGuardsAndHelpers(unittest.TestCase):
         # 4. statusBar 메시지 확인
         self.assertEqual(window.statusBar().currentMessage(), test_msg)
         window.close()
+
+    def test_server_safe_send_str_success(self):
+        """5) StreamDeckServerThread._safe_send_str 정상 전송 성공 검증"""
+        server = StreamDeckServerThread(config_mgr=self.config_mgr)
+        mock_ws = MagicMock()
+        mock_ws.send_str = AsyncMock(return_value=None)
+
+        server._active_sockets.add(mock_ws)
+        res = asyncio.run(server._safe_send_str(mock_ws, '{"type": "ping"}', timeout=1.0))
+        self.assertTrue(res)
+        self.assertIn(mock_ws, server._active_sockets)
+
+    def test_server_safe_send_str_timeout_drops_client(self):
+        """6) StreamDeckServerThread._safe_send_str 타임아웃 발생 시 좀비 클라이언트 제거 검증"""
+        server = StreamDeckServerThread(config_mgr=self.config_mgr)
+        mock_ws = MagicMock()
+
+        async def _hanging_send(data):
+            await asyncio.sleep(2.0)
+
+        mock_ws.send_str = _hanging_send
+        mock_ws.close = AsyncMock(return_value=None)
+
+        server._active_sockets.add(mock_ws)
+        res = asyncio.run(server._safe_send_str(mock_ws, '{"type": "ping"}', timeout=0.05))
+        self.assertFalse(res)
+        self.assertNotIn(mock_ws, server._active_sockets)
 
 
 if __name__ == "__main__":

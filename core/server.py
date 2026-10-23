@@ -114,6 +114,24 @@ class StreamDeckServerThread(QThread):
 
         return ws
 
+    async def _safe_send_str(self, ws: web.WebSocketResponse, data: str, timeout: float = 3.0) -> bool:
+        """Safely send string to a WebSocket client with strict timeout to prevent event loop stalls.
+
+        If send times out or encounters an error (e.g. half-open TCP zombie socket),
+        immediately discards the client from _active_sockets and closes it.
+        """
+        try:
+            await asyncio.wait_for(ws.send_str(data), timeout=timeout)
+            return True
+        except Exception:
+            self._active_sockets.discard(ws)
+            self.client_count_signal.emit(len(self._active_sockets))
+            try:
+                await ws.close()
+            except Exception:
+                pass
+            return False
+
     def _make_sync_payload(self) -> Dict[str, Any]:
         self._sync_seq += 1
         return {
@@ -128,7 +146,7 @@ class StreamDeckServerThread(QThread):
 
     async def _send_sync_buttons(self, ws: web.WebSocketResponse):
         payload = self._make_sync_payload()
-        await ws.send_str(json.dumps(payload))
+        await self._safe_send_str(ws, json.dumps(payload))
 
     # 하위 호환성
     _send_sync_profile = _send_sync_buttons
@@ -143,7 +161,7 @@ class StreamDeckServerThread(QThread):
         elif msg_type in ("request_sync", "get_buttons", "sync_buttons"):
             await self._send_sync_buttons(ws)
         elif msg_type == "get_profiles":
-            await ws.send_str(json.dumps({
+            await self._safe_send_str(ws, json.dumps({
                 "type": "profile_list",
                 "profiles": self.config_mgr.get_profiles(),
                 "current": self.config_mgr.get_current_profile_name()
@@ -153,7 +171,7 @@ class StreamDeckServerThread(QThread):
             profiles = self.config_mgr.get_profiles()
             if not target_name or target_name not in profiles:
                 # NACK: 미존재 프로필 거절
-                await ws.send_str(json.dumps({
+                await self._safe_send_str(ws, json.dumps({
                     "type": "error",
                     "code": "PROFILE_NOT_FOUND",
                     "message": f"Profile '{target_name}' not found",
@@ -168,8 +186,8 @@ class StreamDeckServerThread(QThread):
             act_type = data.get("action_type", "")
             payload = data.get("payload", "")
             if act_type:
-                success, msg = ActionExecutor.execute(act_type, payload)
-                await ws.send_str(json.dumps({
+                success, msg = await asyncio.to_thread(ActionExecutor.execute, act_type, payload)
+                await self._safe_send_str(ws, json.dumps({
                     "type": "action_result",
                     "button_id": -1,
                     "status": "success" if success else "failed",
@@ -191,7 +209,7 @@ class StreamDeckServerThread(QThread):
         import datetime
         now_str = datetime.datetime.now().strftime("%H:%M:%S")
 
-        success, msg = ActionExecutor.execute(act_type, payload)
+        success, msg = await asyncio.to_thread(ActionExecutor.execute, act_type, payload)
 
         status_str = "SUCCESS" if success else f"FAIL: {msg}"
         self.log_signal.emit(now_str, button_id, title, act_type, status_str)
@@ -205,10 +223,7 @@ class StreamDeckServerThread(QThread):
             "message": msg
         })
         for ws in list(self._active_sockets):
-            try:
-                await ws.send_str(res_payload)
-            except Exception:
-                pass
+            await self._safe_send_str(ws, res_payload)
 
     def trigger_button_from_pc(self, button_id: int):
         """PC GUI에서 직접 버튼을 클릭했을 때 비동기 루프로 실행 위임"""
@@ -226,10 +241,7 @@ class StreamDeckServerThread(QThread):
 
         async def _broadcast():
             for ws in list(self._active_sockets):
-                try:
-                    await ws.send_str(payload)
-                except Exception:
-                    pass
+                await self._safe_send_str(ws, payload)
 
         asyncio.run_coroutine_threadsafe(_broadcast(), self.loop)
 

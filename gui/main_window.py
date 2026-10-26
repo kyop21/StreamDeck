@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         self.btn_widgets: List[DeckButtonWidget] = []
 
         self.server_ip = get_server_ip()
-        self.server_port = 8080
+        self.server_port = 2000
         self.mobile_url = f"http://{self.server_ip}:{self.server_port}"
 
         self.init_ui()

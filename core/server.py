@@ -23,7 +23,7 @@ class StreamDeckServerThread(QThread):
     button_executed_signal = pyqtSignal(int, bool)    # (button_id, success)
     profile_changed_signal = pyqtSignal(str)          # (profile_name) 외부에서 프로필 변경 시 GUI 동기화
 
-    def __init__(self, config_mgr: ConfigManager, host: str = "0.0.0.0", port: int = 8080, parent=None):
+    def __init__(self, config_mgr: ConfigManager, host: str = "0.0.0.0", port: int = 2000, parent=None):
         super().__init__(parent)
         self.config_mgr = config_mgr
         self.host = host

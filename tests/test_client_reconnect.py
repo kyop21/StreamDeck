@@ -149,7 +149,7 @@ class TestClientReconnectHardening(unittest.TestCase):
 
     def test_server_url_rotation(self):
         """Verify candidate URL cycling across multi-host pool."""
-        urls = ["ws://100.86.114.58:8080/ws", "ws://10.10.14.27:8080/ws", "ws://127.0.0.1:8080/ws"]
+        urls = ["ws://100.86.114.58:2000/ws", "ws://10.10.14.27:2000/ws", "ws://127.0.0.1:2000/ws"]
         idx = 0
 
         def get_current():
@@ -159,13 +159,13 @@ class TestClientReconnectHardening(unittest.TestCase):
             nonlocal idx
             idx = (idx + 1) % len(urls)
 
-        self.assertEqual(get_current(), "ws://100.86.114.58:8080/ws")
+        self.assertEqual(get_current(), "ws://100.86.114.58:2000/ws")
         rotate()
-        self.assertEqual(get_current(), "ws://10.10.14.27:8080/ws")
+        self.assertEqual(get_current(), "ws://10.10.14.27:2000/ws")
         rotate()
-        self.assertEqual(get_current(), "ws://127.0.0.1:8080/ws")
+        self.assertEqual(get_current(), "ws://127.0.0.1:2000/ws")
         rotate()
-        self.assertEqual(get_current(), "ws://100.86.114.58:8080/ws")
+        self.assertEqual(get_current(), "ws://100.86.114.58:2000/ws")
 
     def test_reconnect_event_interruptible_sleep(self):
         """Verify force_abort_ws immediately wakes up sleeping ws_loop without blocking."""

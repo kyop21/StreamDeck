@@ -54,7 +54,7 @@ class TestStreamDeckCore(unittest.TestCase):
         self.assertTrue(len(ip) > 0)
         print(f"\n[Test] Detected Server IP: {ip}")
 
-        png_bytes = generate_qr_png_bytes(f"http://{ip}:8080")
+        png_bytes = generate_qr_png_bytes(f"http://{ip}:2000")
         self.assertTrue(len(png_bytes) > 100)
         self.assertEqual(png_bytes[:8], b"\x89PNG\r\n\x1a\n")
 

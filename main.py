@@ -28,7 +28,7 @@ def main():
     config_mgr = ConfigManager()
 
     # 2. 백그라운드 웹 및 WebSocket 서버 스레드 시작
-    server_thread = StreamDeckServerThread(config_mgr=config_mgr, host="0.0.0.0", port=8080)
+    server_thread = StreamDeckServerThread(config_mgr=config_mgr, host="0.0.0.0", port=2000)
     server_thread.start()
 
     # 3. 메인 GUI 스튜디오 윈도우 생성 및 표시

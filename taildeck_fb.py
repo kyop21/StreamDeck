@@ -32,7 +32,7 @@ websocket.setdefaulttimeout(5)
 # 1. Custom env var TAILDECK_WS_URL (if provided)
 # 2. Tailscale PC IP: 100.86.114.58
 DEFAULT_SERVER_URLS = [
-    os.environ.get("TAILDECK_WS_URL", "ws://100.86.114.58:8080/ws")
+    os.environ.get("TAILDECK_WS_URL", "ws://100.86.114.58:2000/ws")
 ]
 SERVER_WS_URLS = list(dict.fromkeys(DEFAULT_SERVER_URLS))
 SERVER_WS_URL = SERVER_WS_URLS[0]
@@ -263,7 +263,7 @@ class Win2kThemeClient:
             try:
                 cur_url = self.get_current_server_url()
                 host_part = cur_url.replace("ws://", "").replace("http://", "").split("/")[0]
-                host, port = host_part.split(":") if ":" in host_part else (host_part, "8080")
+                host, port = host_part.split(":") if ":" in host_part else (host_part, "2000")
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(2.0)
                 s.connect((host, int(port)))

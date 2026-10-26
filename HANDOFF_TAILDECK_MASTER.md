@@ -16,7 +16,7 @@ TailDeck 2000 Professional은 Windows 2000 레트로 UI 감성의 하드웨어 �
 ┌────────────────────────────────────────────────────────┐
 │           PC Desktop Host (Windows 11 / Python 3.11)   │
 │   - main.py (PyQt5 GUI + QThread Server Manager)        │
-│   - core/server.py (aiohttp WebSocket Server @ 8080)   │
+│   - core/server.py (aiohttp WebSocket Server @ 2000)   │
 │   - core/config.py (멀티 프로필 관리, schema_version: 2) │
 │   - core/actions.py (Win32 ctypes API 네이티브 액션)     │
 └──────────────▲──────────────────────────▲──────────────┘
@@ -31,9 +31,9 @@ TailDeck 2000 Professional은 Windows 2000 레트로 UI 감성의 하드웨어 �
 ```
 
 ### 네트워크 경로 및 우선순위
-1. **Tailscale 가상 사설망**: PC `100.86.114.58:8080` <-> 파이 `100.72.170.44`
-2. **로컬 무선 LAN (Wi-Fi)**: PC `10.10.14.27:8080`
-3. **로컬호스트(개발/테스트)**: `127.0.0.1:8080`
+1. **Tailscale 가상 사설망**: PC `100.86.114.58:2000` <-> 파이 `100.72.170.44`
+2. **로컬 무선 LAN (Wi-Fi)**: PC `10.10.14.27:2000`
+3. **로컬호스트(개발/테스트)**: `127.0.0.1:2000`
 
 ---
 
